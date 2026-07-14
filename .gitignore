@@ -1,0 +1,34 @@
+# Ambientes virtuais
+venv_professor/
+venv/
+env/
+
+# Dados processados e grandes
+dados/
+
+# Arquivos de cache e bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dll
+*.dylib
+
+# Logs
+*.log
+
+# Editor e IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Modelos grandes (caso baixe algo local)
+*.gguf
+*.bin
+*.safetensors
