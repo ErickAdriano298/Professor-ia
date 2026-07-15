@@ -5,86 +5,156 @@ Extrator de áudio e transcrição de vídeos usando yt-dlp + Whisper.
 
 import subprocess
 import os
-from pathlib import Path
 import sys
+import time
+from pathlib import Path
 
-def extrair_audio_youtube(url_video, pasta_saida="dados/audios/"):
+# Adiciona a raiz do projeto ao sys.path para importar config.py
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from config import (
+    AUDIOS_PASTA,
+    TRANSCRICOES_PASTA,
+    WHISPER_MODELO,
+    WHISPER_IDIOMA
+)
+
+# ===== MODO DEBUG =====
+DEBUG = "--debug" in sys.argv
+
+def extrair_audio_youtube(url_video, pasta_saida=AUDIOS_PASTA):
     """
     Baixa o áudio de um vídeo do YouTube em MP3.
     """
-    os.makedirs(pasta_saida, exist_ok=True)
-    
-    cmd = [
-        "yt-dlp",
-        "--extract-audio",
-        "--audio-format", "mp3",
-        "--output", f"{pasta_saida}/%(title)s.%(ext)s",
-        url_video
-    ]
-    
-    print(f"🎵 Baixando áudio de: {url_video}")
-    subprocess.run(cmd, check=True)
-    
-    # Pego o último arquivo MP3 baixado (o mais recente)
-    arquivos_mp3 = list(Path(pasta_saida).glob("*.mp3"))
-    if arquivos_mp3:
-        return str(arquivos_mp3[-1])
-    return None
+    try:
+        os.makedirs(pasta_saida, exist_ok=True)
 
-def transcrever_audio(caminho_audio, pasta_saida="dados/transcricoes/"):
-    """
-    Transcreve o áudio usando Whisper (modelo medium para melhor precisão).
-    """
-    os.makedirs(pasta_saida, exist_ok=True)
-    
-    nome_base = Path(caminho_audio).stem
-    caminho_saida = Path(pasta_saida) / f"{nome_base}.txt"
-    
-    # Uso a linha de comando do Whisper porque é mais simples de integrar
-    cmd = [
-        "whisper",
-        caminho_audio,
-        "--model", "medium",
-        "--language", "Portuguese",
-        "--output_dir", pasta_saida,
-        "--output_format", "txt"
-    ]
-    
-    print(f"🎤 Transcrevendo áudio: {caminho_audio}")
-    subprocess.run(cmd, check=True)
-    
-    # O Whisper salva com um nome padrão; renomeio para manter consistência
-    arquivo_whisper = Path(pasta_saida) / f"{nome_base}.txt"
-    if arquivo_whisper.exists() and caminho_saida != arquivo_whisper:
-        os.rename(arquivo_whisper, caminho_saida)
-    
-    print(f"✅ Transcrição salva: {caminho_saida}")
-    return str(caminho_saida)
+        cmd = [
+            "yt-dlp",
+            "--extract-audio",
+            "--audio-format", "mp3",
+            "--output", f"{pasta_saida}/%(title)s.%(ext)s",
+            url_video
+        ]
 
-def processar_video_url(url_video, pasta_audio="dados/audios/", pasta_transcricao="dados/transcricoes/"):
+        print(f"🎵 Baixando áudio de: {url_video}")
+        subprocess.run(cmd, check=True)
+
+        # Pega o arquivo MP3 mais recente (pela data de modificação)
+        arquivos_mp3 = list(Path(pasta_saida).glob("*.mp3"))
+        if arquivos_mp3:
+            audio_mais_recente = max(arquivos_mp3, key=lambda p: p.stat().st_mtime)
+            return str(audio_mais_recente)
+        return None
+
+    except Exception as e:
+        if DEBUG:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"❌ Erro ao baixar áudio: {e}")
+        return None
+
+def transcrever_audio(caminho_audio, pasta_saida=TRANSCRICOES_PASTA):
+    """
+    Transcreve o áudio usando Whisper.
+    """
+    try:
+        os.makedirs(pasta_saida, exist_ok=True)
+
+        nome_base = Path(caminho_audio).stem
+        caminho_saida = Path(pasta_saida) / f"{nome_base}.txt"
+
+        # Uso a linha de comando do Whisper porque é mais simples de integrar
+        cmd = [
+            "whisper",
+            caminho_audio,
+            "--model", WHISPER_MODELO,
+            "--language", WHISPER_IDIOMA,
+            "--output_dir", pasta_saida,
+            "--output_format", "txt"
+        ]
+
+        print(f"🎤 Transcrevendo áudio: {caminho_audio}")
+        subprocess.run(cmd, check=True)
+
+        # O Whisper pode salvar com nome diferente (ex: adiciona sufixo).
+        # Vamos garantir que o arquivo final tenha o nome esperado.
+        arquivo_whisper = Path(pasta_saida) / f"{nome_base}.txt"
+        if arquivo_whisper.exists() and arquivo_whisper != caminho_saida:
+            if not caminho_saida.exists():
+                os.rename(arquivo_whisper, caminho_saida)
+        elif not caminho_saida.exists() and arquivo_whisper.exists():
+            os.rename(arquivo_whisper, caminho_saida)
+
+        # Se ainda não existe, algo deu errado – procura por variações
+        if not caminho_saida.exists():
+            possiveis = list(Path(pasta_saida).glob(f"{nome_base}*.txt"))
+            if possiveis:
+                ultimo = max(possiveis, key=lambda p: p.stat().st_mtime)
+                os.rename(ultimo, caminho_saida)
+
+        print(f"✅ Transcrição salva: {caminho_saida}")
+        return str(caminho_saida)
+
+    except Exception as e:
+        if DEBUG:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"❌ Erro ao transcrever áudio: {e}")
+        return None
+
+def processar_video_url(url_video, pasta_audio=AUDIOS_PASTA, pasta_transcricao=TRANSCRICOES_PASTA):
     """
     Processa um vídeo do YouTube: baixa áudio e transcreve.
     """
-    audio = extrair_audio_youtube(url_video, pasta_audio)
-    if audio:
-        return transcrever_audio(audio, pasta_transcricao)
-    return None
+    try:
+        audio = extrair_audio_youtube(url_video, pasta_audio)
+        if audio:
+            return transcrever_audio(audio, pasta_transcricao)
+        return None
+    except Exception as e:
+        if DEBUG:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"❌ Erro ao processar URL: {e}")
+        return None
 
-def processar_video_local(caminho_video, pasta_saida="dados/transcricoes/"):
+def processar_video_local(caminho_video, pasta_saida=TRANSCRICOES_PASTA):
     """
     Processa um vídeo local: transcreve diretamente (já tenho o arquivo).
     """
-    return transcrever_audio(caminho_video, pasta_saida)
+    try:
+        return transcrever_audio(caminho_video, pasta_saida)
+    except Exception as e:
+        if DEBUG:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"❌ Erro ao processar vídeo local: {e}")
+        return None
 
 if __name__ == "__main__":
-    if len(sys.argv) >= 2:
-        entrada = sys.argv[1]
-        
-        if entrada.startswith("http"):
-            processar_video_url(entrada)  # URL do YouTube
+    try:
+        if len(sys.argv) >= 2:
+            entrada = sys.argv[1]
+
+            if entrada.startswith("http"):
+                processar_video_url(entrada)  # URL do YouTube
+            else:
+                processar_video_local(entrada)  # Arquivo local
         else:
-            processar_video_local(entrada)  # Arquivo local
-    else:
-        print("Uso:")
-        print("  python extrair_video.py https://youtube.com/watch?v=...")
-        print("  python extrair_video.py video.mp4")
+            print("Uso:")
+            print("  python extrair_video.py https://youtube.com/watch?v=...")
+            print("  python extrair_video.py video.mp4")
+            print("")
+            print("Dica: execute com --debug para ver erros detalhados.")
+    except Exception as e:
+        if DEBUG:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"❌ Erro na execução principal: {e}")
+        sys.exit(1)

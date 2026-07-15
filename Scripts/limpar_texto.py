@@ -4,8 +4,16 @@ Limpeza de textos extraídos para uso no Professor IA.
 
 import re
 import unicodedata
-from pathlib import Path
 import sys
+from pathlib import Path
+
+# Adiciona a raiz do projeto ao sys.path para importar config.py
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from config import TRANSCRICOES_PASTA, PROCESSADOS_PASTA
+
+# ===== MODO DEBUG =====
+DEBUG = "--debug" in sys.argv
 
 def limpar_texto(texto):
     """
@@ -79,41 +87,62 @@ def processar_arquivo(entrada, saida=None):
         return texto_limpo
 
     except Exception as e:
-        print(f"❌ Erro ao processar {entrada}: {e}")
+        if DEBUG:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"❌ Erro ao processar {entrada}: {e}")
         return ""
 
-def processar_pasta(entrada, saida="dados/processados/"):
+def processar_pasta(entrada=TRANSCRICOES_PASTA, saida=PROCESSADOS_PASTA):
     """
     Processa todos os arquivos .txt de uma pasta.
+    Usa as pastas definidas em config.py por padrão.
     """
-    entrada = Path(entrada)
-    saida = Path(saida)
-    saida.mkdir(parents=True, exist_ok=True)
+    try:
+        entrada = Path(entrada)
+        saida = Path(saida)
+        saida.mkdir(parents=True, exist_ok=True)
 
-    arquivos = list(entrada.glob("*.txt"))
-    if not arquivos:
-        print(f"ℹ️ Nenhum arquivo .txt encontrado em: {entrada}")
+        arquivos = list(entrada.glob("*.txt"))
+        if not arquivos:
+            print(f"ℹ️ Nenhum arquivo .txt encontrado em: {entrada}")
+            return 0
+
+        total = 0
+        for arquivo in arquivos:
+            nome_saida = saida / f"{arquivo.stem}_limpo.txt"
+            processar_arquivo(str(arquivo), str(nome_saida))
+            total += 1
+
+        print(f"\n📊 Total de arquivos processados: {total}")
+        return total
+
+    except Exception as e:
+        if DEBUG:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"❌ Erro ao processar pasta {entrada}: {e}")
         return 0
 
-    total = 0
-    for arquivo in arquivos:
-        nome_saida = saida / f"{arquivo.stem}_limpo.txt"
-        processar_arquivo(str(arquivo), str(nome_saida))
-        total += 1
-
-    print(f"\n📊 Total de arquivos processados: {total}")
-    return total
-
 if __name__ == "__main__":
-    if len(sys.argv) >= 2:
-        entrada = sys.argv[1]
-        saida = sys.argv[2] if len(sys.argv) >= 3 else "dados/processados/"
+    try:
+        if len(sys.argv) >= 2:
+            entrada = sys.argv[1]
+            saida = sys.argv[2] if len(sys.argv) >= 3 else PROCESSADOS_PASTA
 
-        if Path(entrada).is_dir():
-            processar_pasta(entrada, saida)
+            if Path(entrada).is_dir():
+                processar_pasta(entrada, saida)
+            else:
+                processar_arquivo(entrada, saida)
         else:
-            processar_arquivo(entrada, saida)
-    else:
-        print("Uso:")
-        print("  python limpar_texto.py pasta_com_textos/ pasta_saida/")
-        print("  python limpar_texto.py arquivo.txt pasta_saida/")
+            # Executa com os valores padrão do config.py
+            processar_pasta()
+    except Exception as e:
+        if DEBUG:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"❌ Erro na execução principal: {e}")
+        sys.exit(1)
