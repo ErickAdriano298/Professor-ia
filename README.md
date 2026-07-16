@@ -1,4 +1,3 @@
-markdown
 # 🧑‍🏫 Professor IA – Assistente de Estudos Local via Linha de Comando
 
 ![Python](https://img.shields.io/badge/Python-3.14-blue)
@@ -48,74 +47,3 @@ Antes de começar, instale:
    ```bash
    git clone https://github.com/ErickAdriano298/Professor-ia.git
    cd Professor-ia
-Crie e ative um ambiente virtual
-
-bash
-python -m venv venv
-source venv/bin/activate   # Linux/macOS
-venv\Scripts\activate      # Windows
-Instale as dependências
-
-bash
-pip install -r requirements.txt
-Baixe o modelo de linguagem
-
-bash
-ollama pull qwen3.5:4b
-Coloque seus materiais de estudo nas pastas:
-
-dados/pdfs/
-
-dados/imagens/
-
-dados/videos/
-
-Extraia, limpe e crie o banco vetorial (tudo de uma vez):
-
-bash
-python scripts/extrator_unificado.py dados/ dados/transcricoes/
-python scripts/limpar_texto.py dados/transcricoes/ dados/processados/
-python scripts/criar_vector_db.py
-Inicie o Professor IA
-
-bash
-python scripts/professor_ia.py
-Faça perguntas no terminal. Digite sair para encerrar.
-
-🗂️ Estrutura do Projeto
-text
-Professor-ia/
-├── scripts/                 # Módulos principais
-│   ├── professor_ia.py      # Lógica de perguntas e respostas
-│   ├── criar_vector_db.py   # Criação do FAISS
-│   ├── limpar_texto.py      # Limpeza de textos
-│   ├── extrair_*.py         # Extratores (PDF, imagem, vídeo)
-│   └── extrator_unificado.py
-├── dados/                   # (ignorado pelo Git) seus materiais
-├── requirements.txt
-├── README.md
-└── .gitignore
-🧠 Exemplo de Uso
-bash
-🧑‍🎓 Você: O que é uma derivada?
-🔍 Buscando contexto...
-📚 3 trechos relevantes encontrados.
-🧠 Gerando resposta com Qwen3.5 4B...
-
-👨‍🏫 Professor: Segundo seu material, derivada é a taxa de variação instantânea. A derivada de f(x) = x² é 2x...
-👨‍💻 Autor
-Erick Adriano
-
-https://img.shields.io/badge/GitHub-ErickAdriano298-181717?style=flat&logo=github
-https://img.shields.io/badge/LinkedIn-Erick_Adriano-0A66C2?style=flat&logo=linkedin
-
-⭐ Agradecimentos
-LangChain
-
-Ollama
-
-Tesseract
-
-Whisper
-
-text

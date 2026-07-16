@@ -121,6 +121,10 @@ def main():
             resposta = gerar_resposta(pergunta, contexto)
             print(f"\n👨‍🏫 Professor: {resposta}\n")
 
+        except EOFError:
+            # Fim da entrada (pipe, redirecionamento, etc.)
+            print("\n👋 Fim da entrada. Saindo...")
+            break
         except KeyboardInterrupt:
             print("\n👋 Até logo!")
             break

@@ -136,6 +136,44 @@ def processar_video_local(caminho_video, pasta_saida=TRANSCRICOES_PASTA):
             print(f"❌ Erro ao processar vídeo local: {e}")
         return None
 
+# ===== NOVA FUNÇÃO PARA PROCESSAR PASTA RECURSIVAMENTE =====
+def extrair_videos_da_pasta(pasta_entrada, pasta_saida=TRANSCRICOES_PASTA):
+    """
+    Processa todos os vídeos de uma pasta e subpastas recursivamente.
+    """
+    try:
+        pasta_entrada = Path(pasta_entrada)
+        pasta_saida = Path(pasta_saida)
+        pasta_saida.mkdir(parents=True, exist_ok=True)
+
+        extensoes = [".mp4", ".avi", ".mkv", ".mov", ".webm"]
+        arquivos = []
+        for ext in extensoes:
+            arquivos.extend(pasta_entrada.rglob(f"*{ext}"))
+            arquivos.extend(pasta_entrada.rglob(f"*{ext.upper()}"))
+
+        if not arquivos:
+            print(f"ℹ️ Nenhum vídeo encontrado em: {pasta_entrada}")
+            return 0
+
+        total = 0
+        for video in arquivos:
+            print(f"\n🎬 Processando: {video}")
+            resultado = processar_video_local(str(video), str(pasta_saida))
+            if resultado:
+                total += 1
+
+        print(f"\n📊 Total de vídeos processados: {total}")
+        return total
+
+    except Exception as e:
+        if DEBUG:
+            import traceback
+            traceback.print_exc()
+        else:
+            print(f"❌ Erro ao processar pasta {pasta_entrada}: {e}")
+        return 0
+
 if __name__ == "__main__":
     try:
         if len(sys.argv) >= 2:
@@ -144,11 +182,16 @@ if __name__ == "__main__":
             if entrada.startswith("http"):
                 processar_video_url(entrada)  # URL do YouTube
             else:
-                processar_video_local(entrada)  # Arquivo local
+                # Verifica se é uma pasta ou arquivo
+                if os.path.isdir(entrada):
+                    extrair_videos_da_pasta(entrada)
+                else:
+                    processar_video_local(entrada)  # Arquivo local
         else:
             print("Uso:")
             print("  python extrair_video.py https://youtube.com/watch?v=...")
             print("  python extrair_video.py video.mp4")
+            print("  python extrair_video.py pasta_com_videos/")
             print("")
             print("Dica: execute com --debug para ver erros detalhados.")
     except Exception as e:

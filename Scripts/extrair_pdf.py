@@ -48,20 +48,23 @@ def extrair_pdf(caminho_pdf, caminho_saida=None):
 
 def extrair_pdfs_da_pasta(pasta_entrada, pasta_saida):
     """
-    Processa todos os PDFs de uma pasta de uma vez.
+    Processa todos os PDFs de uma pasta e subpastas recursivamente.
     """
     try:
         pasta_entrada = Path(pasta_entrada)
         pasta_saida = Path(pasta_saida)
         pasta_saida.mkdir(parents=True, exist_ok=True)
 
-        arquivos = list(pasta_entrada.glob("*.pdf"))
+        # 🔧 AGORA BUSCA RECURSIVAMENTE EM TODAS AS SUBPASTAS
+        arquivos = list(pasta_entrada.rglob("*.pdf"))
         if not arquivos:
             print(f"ℹ️ Nenhum PDF encontrado em: {pasta_entrada}")
             return 0
 
         total = 0
         for pdf in arquivos:
+            # Mantém a estrutura de subpastas no nome do arquivo de saída?
+            # Opção: usar apenas o nome do arquivo (como antes)
             nome_saida = pasta_saida / f"{pdf.stem}.txt"
             extrair_pdf(str(pdf), str(nome_saida))
             total += 1

@@ -200,9 +200,10 @@ def extrair_imagens_da_pasta(pasta_entrada, pasta_saida=TRANSCRICOES_PASTA,
         extensoes = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']
         arquivos = []
 
+        # 🔧 AGORA BUSCA RECURSIVAMENTE EM TODAS AS SUBPASTAS
         for ext in extensoes:
-            arquivos.extend(pasta_entrada.glob(f"*{ext}"))
-            arquivos.extend(pasta_entrada.glob(f"*{ext.upper()}"))
+            arquivos.extend(pasta_entrada.rglob(f"*{ext}"))
+            arquivos.extend(pasta_entrada.rglob(f"*{ext.upper()}"))
 
         if not arquivos:
             print(f"ℹ️ Nenhuma imagem encontrada em: {pasta_entrada}")

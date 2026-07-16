@@ -39,7 +39,7 @@ def criar_vector_db(
         print("📚 Carregando textos limpos...")
         loader = DirectoryLoader(
             pasta_textos,
-            glob="*.txt",
+            rglob="*.txt",
             loader_cls=TextLoader,
             loader_kwargs={"encoding": "utf-8"}
         )
